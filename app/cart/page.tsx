@@ -18,7 +18,7 @@ export default function CartPage() {
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     const total = getCartTotal();
-    const finalTotal = total * 1.08; // Include tax
+    const finalTotal = Math.round(total * 1.08 * 100) / 100; // Include tax and round to 2 decimal places
 
     const handleCheckout = async () => {
         if (!user) {
