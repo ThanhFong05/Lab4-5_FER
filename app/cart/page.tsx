@@ -4,12 +4,49 @@ import { useCart } from "@/context/CartContext";
 import CartItem from "@/components/CartItem";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { useState } from "react";
 
 export default function CartPage() {
     const { cartItems, getCartTotal, clearCart } = useCart();
+    const { user } = useAuth();
+    const router = useRouter();
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
+
     const total = getCartTotal();
+    const finalTotal = total * 1.08; // Include tax
+
+    const handleCheckout = async () => {
+        if (!user) {
+            router.push("/login");
+            return;
+        }
+
+        setIsCheckingOut(true);
+
+        try {
+            const { error } = await supabase.from('orders').insert({
+                user_id: user.id,
+                total_price: finalTotal,
+                items: cartItems,
+                status: 'pending'
+            });
+
+            if (error) throw error;
+
+            clearCart();
+            router.push("/order-history");
+        } catch (error: any) {
+            console.error("Checkout error:", error.message);
+            alert("Failed to place order: " + error.message);
+        } finally {
+            setIsCheckingOut(false);
+        }
+    };
 
     if (cartItems.length === 0) {
         return (
@@ -61,12 +98,16 @@ export default function CartPage() {
                             <Separator />
                             <div className="flex justify-between text-lg font-bold text-gray-900 pt-2">
                                 <span>Total</span>
-                                <span>${(total * 1.08).toFixed(2)}</span>
+                                <span>${finalTotal.toFixed(2)}</span>
                             </div>
                         </div>
 
-                        <Button className="w-full mt-6" size="lg">
-                            Checkout
+                        <Button
+                            className="w-full mt-6"
+                            size="lg"
+                            onClick={handleCheckout}
+                            disabled={isCheckingOut}>
+                            {isCheckingOut ? "Processing..." : "Checkout"}
                         </Button>
 
                         <Link href="/" className="flex items-center justify-center mt-4 text-sm text-gray-500 hover:text-primary transition-colors">

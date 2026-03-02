@@ -11,7 +11,8 @@ import { Eye, EyeOff, Moon } from "lucide-react";
 
 export default function LoginPage() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { signInWithPassword } = useAuth();
+    const [errorMsg, setErrorMsg] = useState("");
     const [formData, setFormData] = useState({
         email: "",
         password: "",
@@ -22,12 +23,20 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            login(formData.email || "user@example.com");
+        setErrorMsg("");
+
+        const { error } = await signInWithPassword(formData.email, formData.password);
+
+        setIsLoading(false);
+        if (error) {
+            if (error.message.includes("Email not confirmed")) {
+                setErrorMsg("Email not confirmed. Please check your inbox to verify your account.");
+            } else {
+                setErrorMsg(error.message);
+            }
+        } else {
             router.push("/");
-        }, 1000);
+        }
     };
 
     return (
@@ -37,12 +46,19 @@ export default function LoginPage() {
                 <div className="w-full max-w-sm space-y-8">
                     <div className="space-y-2">
                         {/* Logo / Brand */}
-                        <h2 className="text-xl font-bold tracking-tight mb-8">Tobiez Sneaker</h2>
+                        <Link href="/" className="inline-block text-xl font-bold tracking-tight mb-8 hover:text-gray-600 transition-colors">
+                            Tobiez Sneaker
+                        </Link>
 
                         <h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
                         <p className="text-muted-foreground">
                             Please enter your details to sign in to your account.
                         </p>
+                        {errorMsg && (
+                            <div className="p-3 mt-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900 rounded-md">
+                                {errorMsg}
+                            </div>
+                        )}
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -51,7 +67,7 @@ export default function LoginPage() {
                                 <Label htmlFor="email">Email Address</Label>
                                 <Input
                                     id="email"
-                                    placeholder="name@company.com"
+                                    placeholder="name@gmail.com"
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}

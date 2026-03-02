@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Star, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { signUp } = useAuth();
+    const [errorMsg, setErrorMsg] = useState("");
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -17,16 +20,28 @@ export default function RegisterPage() {
         confirmPassword: "",
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (formData.password !== formData.confirmPassword) {
+            setErrorMsg("Passwords do not match");
+            return;
+        }
+
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-            router.push("/login");
-        }, 1500);
+        setErrorMsg("");
+
+        const { error } = await signUp(formData.email, formData.password, formData.name);
+
+        setIsLoading(false);
+        if (error) {
+            setErrorMsg(error.message);
+        } else {
+            router.push("/login?message=Account created successfully. Please sign in.");
+        }
     };
 
     return (
@@ -38,13 +53,20 @@ export default function RegisterPage() {
                         {/* Logo / Brand */}
                         <div className="flex items-center space-x-2 mb-8">
                             {/* You can add an icon here if needed */}
-                            <h2 className="text-xl font-bold tracking-tight">Tobiez Sneaker</h2>
+                            <Link href="/" className="inline-block text-xl font-bold tracking-tight hover:text-gray-600 transition-colors">
+                                Tobiez Sneaker
+                            </Link>
                         </div>
 
                         <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Create an account</h1>
                         <p className="text-muted-foreground text-lg">
                             Join the community of sneaker enthusiasts.
                         </p>
+                        {errorMsg && (
+                            <div className="p-3 mt-4 text-sm text-red-500 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900 rounded-md">
+                                {errorMsg}
+                            </div>
+                        )}
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
@@ -52,7 +74,7 @@ export default function RegisterPage() {
                             <Label htmlFor="name">Full Name</Label>
                             <Input
                                 id="name"
-                                placeholder="John Doe"
+                                placeholder="Your name"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 className="h-11 bg-gray-50/50"
@@ -65,7 +87,7 @@ export default function RegisterPage() {
                             <Input
                                 id="email"
                                 type="email"
-                                placeholder="name@example.com"
+                                placeholder="name@gmail.com"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 className="h-11 bg-gray-50/50"
@@ -101,15 +123,28 @@ export default function RegisterPage() {
 
                         <div className="space-y-2">
                             <Label htmlFor="confirmPassword">Confirm Password</Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                placeholder="••••••••"
-                                value={formData.confirmPassword}
-                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                className="h-11 bg-gray-50/50"
-                                required
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="••••••••"
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                    className="h-11 pr-10 bg-gray-50/50"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                        <Eye className="h-4 w-4" />
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         <div className="flex items-start space-x-2">
